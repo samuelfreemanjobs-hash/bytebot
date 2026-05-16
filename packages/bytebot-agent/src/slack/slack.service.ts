@@ -8,6 +8,8 @@ import {
   SlackEvent,
   SlackMessagePayload,
   SlackThreadMapping,
+  SlackFile,
+  SlackClipRequest,
 } from './slack.types';
 import { Role, TaskStatus } from '@prisma/client';
 
@@ -39,10 +41,23 @@ export class SlackService {
 
     const threadTs = event.thread_ts || event.ts;
     const channelId = event.channel;
-    const text = event.text;
+    let text = event.text || '';
 
-    if (!threadTs || !channelId || !text) {
+    if (!threadTs || !channelId) {
       this.logger.warn('Missing required fields in Slack event');
+      return;
+    }
+
+    // Handle file uploads
+    let files: { name: string; type: string; size: number; base64: string }[] = [];
+    if (event.files && event.files.length > 0) {
+      files = await this.downloadFiles(event.files);
+      if (!text && files.length > 0) {
+        text = `Uploaded ${files.length} file(s): ${files.map(f => f.name).join(', ')}`;
+      }
+    }
+
+    if (!text && files.length === 0) {
       return;
     }
 
@@ -53,6 +68,7 @@ export class SlackService {
       const task = await this.tasksService.create({
         description: text,
         createdBy: Role.USER,
+        files: files.length > 0 ? files : undefined,
       });
 
       mapping = {
@@ -75,6 +91,86 @@ export class SlackService {
       this.logger.log(
         `Added message to existing task ${mapping.taskId} from Slack`,
       );
+    }
+  }
+
+  private async downloadFiles(
+    slackFiles: SlackFile[],
+  ): Promise<{ name: string; type: string; size: number; base64: string }[]> {
+    const token = this.configService.get<string>('SLACK_BOT_TOKEN');
+    if (!token) {
+      this.logger.error('SLACK_BOT_TOKEN not configured');
+      return [];
+    }
+
+    const downloadedFiles: { name: string; type: string; size: number; base64: string }[] = [];
+
+    for (const file of slackFiles) {
+      try {
+        const response = await fetch(file.url_private_download, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          this.logger.error(`Failed to download file ${file.name}: ${response.statusText}`);
+          continue;
+        }
+
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+
+        downloadedFiles.push({
+          name: file.name,
+          type: file.mimetype,
+          size: file.size,
+          base64,
+        });
+
+        this.logger.log(`Downloaded file: ${file.name} (${file.size} bytes)`);
+      } catch (error) {
+        this.logger.error(`Error downloading file ${file.name}:`, error);
+      }
+    }
+
+    return downloadedFiles;
+  }
+
+  async clipMessageToObsidian(request: SlackClipRequest): Promise<{ success: boolean; notePath?: string }> {
+    const token = this.configService.get<string>('SLACK_BOT_TOKEN');
+    if (!token) {
+      return { success: false };
+    }
+
+    try {
+      const response = await fetch(
+        `https://slack.com/api/conversations.history?channel=${request.channelId}&latest=${request.messageTs}&limit=1&inclusive=true`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const data = await response.json();
+      if (!data.ok || !data.messages || data.messages.length === 0) {
+        return { success: false };
+      }
+
+      const message = data.messages[0];
+      const clipData = {
+        text: message.text,
+        timestamp: new Date(parseFloat(message.ts) * 1000).toISOString(),
+        channelId: request.channelId,
+        tags: request.tags || [],
+        notePath: request.notePath,
+        vaultName: request.vaultName,
+      };
+
+      this.eventEmitter.emit('slack.clip', clipData);
+      return { success: true, notePath: request.notePath };
+    } catch (error) {
+      this.logger.error('Failed to clip message:', error);
+      return { success: false };
     }
   }
 

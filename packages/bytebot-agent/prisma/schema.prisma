@@ -137,3 +137,28 @@ model ObsidianSession {
   task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
+model ScheduledTask {
+  id              String      @id @default(uuid())
+  name            String
+  description     String
+  cronExpression  String
+  enabled         Boolean     @default(true)
+  lastRun         DateTime?
+  metadata        Json        @default("{}")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model SlackClip {
+  id            String      @id @default(uuid())
+  messageTs     String
+  channelId     String
+  text          String
+  vaultName     String
+  notePath      String
+  tags          String[]
+  createdAt     DateTime    @default(now())
+
+  @@unique([channelId, messageTs])
+}
+

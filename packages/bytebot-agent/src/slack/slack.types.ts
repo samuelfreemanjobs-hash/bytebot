@@ -1,3 +1,12 @@
+export interface SlackFile {
+  id: string;
+  name: string;
+  mimetype: string;
+  size: number;
+  url_private: string;
+  url_private_download: string;
+}
+
 export interface SlackEvent {
   type: string;
   event_ts: string;
@@ -7,6 +16,16 @@ export interface SlackEvent {
   thread_ts?: string;
   ts?: string;
   bot_id?: string;
+  files?: SlackFile[];
+  file_id?: string;
+}
+
+export interface SlackClipRequest {
+  messageTs: string;
+  channelId: string;
+  vaultName: string;
+  notePath?: string;
+  tags?: string[];
 }
 
 export interface SlackEventPayload {

@@ -14,6 +14,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SummariesModule } from './summaries/summaries.modue';
 import { ProxyModule } from './proxy/proxy.module';
 import { SlackModule } from './slack/slack.module';
+import { ScheduledTasksModule } from './scheduled/scheduled-tasks.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SlackModule } from './slack/slack.module';
     ProxyModule,
     PrismaModule,
     SlackModule,
+    ScheduledTasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

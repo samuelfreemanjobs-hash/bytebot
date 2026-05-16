@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -111,10 +111,14 @@ export class ScheduledTasksService implements OnModuleInit {
       metadata: Record<string, any>;
     }>,
   ): Promise<ScheduledTask> {
-    const existingJob = this.schedulerRegistry.getCronJob(id);
-    if (existingJob) {
-      existingJob.stop();
-      this.schedulerRegistry.deleteCronJob(id);
+    try {
+      const existingJob = this.schedulerRegistry.getCronJob(id);
+      if (existingJob) {
+        existingJob.stop();
+        this.schedulerRegistry.deleteCronJob(id);
+      }
+    } catch (error) {
+      // Job might not exist (disabled or failed to register)
     }
 
     const task = await this.prisma.scheduledTask.update({
@@ -147,23 +151,5 @@ export class ScheduledTasksService implements OnModuleInit {
     return this.prisma.scheduledTask.findMany({
       orderBy: { createdAt: 'desc' },
     });
-  }
-
-  // Built-in daily summary task
-  @Cron(CronExpression.EVERY_DAY_AT_6AM)
-  async dailySummaryCheck(): Promise<void> {
-    const dailySummaryTasks = await this.prisma.scheduledTask.findMany({
-      where: {
-        enabled: true,
-        metadata: {
-          path: ['type'],
-          equals: 'daily_summary',
-        },
-      },
-    });
-
-    for (const task of dailySummaryTasks) {
-      await this.executeScheduledTask(task);
-    }
   }
 }

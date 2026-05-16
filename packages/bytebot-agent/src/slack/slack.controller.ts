@@ -5,9 +5,11 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { SlackService } from './slack.service';
 import { SlackEventPayload, SlackUrlVerification } from './slack.types';
+import { SlackSignatureGuard } from './slack.guard';
 
 @Controller('slack')
 export class SlackController {
@@ -17,6 +19,7 @@ export class SlackController {
 
   @Post('events')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(SlackSignatureGuard)
   async handleEvents(
     @Body() body: SlackEventPayload | SlackUrlVerification,
   ): Promise<any> {

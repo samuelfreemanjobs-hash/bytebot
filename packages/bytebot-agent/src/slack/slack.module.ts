@@ -1,6 +1,7 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { SlackController } from './slack.controller';
 import { SlackService } from './slack.service';
+import { SlackSignatureGuard } from './slack.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { MessagesModule } from '../messages/messages.module';
@@ -8,7 +9,7 @@ import { MessagesModule } from '../messages/messages.module';
 @Module({
   imports: [PrismaModule, TasksModule, MessagesModule],
   controllers: [SlackController],
-  providers: [SlackService],
+  providers: [SlackService, SlackSignatureGuard],
   exports: [SlackService],
 })
 export class SlackModule implements OnModuleInit {

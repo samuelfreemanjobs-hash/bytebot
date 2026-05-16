@@ -56,12 +56,14 @@ model Task {
   queuedAt      DateTime?
   error         String?
   result        Json?
-  // Example: 
+  // Example:
   // { "provider": "anthropic", "name": "claude-opus-4-20250514", "title": "Claude Opus 4" }
-  model         Json
-  messages      Message[]
-  summaries     Summary[]
-  files         File[]
+  model           Json
+  messages        Message[]
+  summaries       Summary[]
+  files           File[]
+  slackThread     SlackThread?
+  obsidianSession ObsidianSession?
 }
 
 model Summary {
@@ -106,9 +108,32 @@ model File {
   data          String      // Base64 encoded file data
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  
+
   // Relations
   task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId        String
+}
+
+model SlackThread {
+  id            String      @id @default(uuid())
+  threadTs      String
+  channelId     String
+  taskId        String      @unique
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, threadTs])
+}
+
+model ObsidianSession {
+  id            String      @id @default(uuid())
+  vaultName     String
+  taskId        String      @unique
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 

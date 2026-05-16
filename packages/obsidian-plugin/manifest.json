@@ -1,0 +1,10 @@
+{
+  "id": "bytebot",
+  "name": "Bytebot",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "AI agent that can chat, edit notes, and organize your knowledge",
+  "author": "Bytebot",
+  "authorUrl": "https://bytebot.ai",
+  "isDesktopOnly": false
+}

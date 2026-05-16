@@ -1,0 +1,16 @@
+{
+  "name": "obsidian-bytebot",
+  "version": "1.0.0",
+  "description": "Bytebot plugin for Obsidian",
+  "main": "main.js",
+  "scripts": {
+    "dev": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --watch",
+    "build": "esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --minify"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.7.3"
+  }
+}

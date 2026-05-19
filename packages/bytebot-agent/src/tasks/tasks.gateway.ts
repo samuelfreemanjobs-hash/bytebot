@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 @WebSocketGateway({
@@ -18,6 +19,8 @@ import { Injectable } from '@nestjs/common';
 export class TasksGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+
+  constructor(private readonly eventEmitter: EventEmitter2) {}
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -45,6 +48,7 @@ export class TasksGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitNewMessage(taskId: string, message: any) {
     this.server.to(`task_${taskId}`).emit('new_message', message);
+    this.eventEmitter.emit('message.created', { taskId, message });
   }
 
   emitTaskCreated(task: any) {
